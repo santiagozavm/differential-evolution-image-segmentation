@@ -4,15 +4,11 @@ import numpy as np
 from src.segmentation import (
     cargar_imagen,
     calcular_histograma,
-    evaluar_individuo,
-    evaluar_poblacion
+    segmentar_imagen
 )
 
 from src.differential_evolution import (
-    inicializar_poblacion,
-    mutacion,
-    cruza_binomial,
-    seleccion
+    evolucion_diferencial
 )
 
 
@@ -23,6 +19,8 @@ NUM_SOLUCIONES = 50
 
 F = 0.9
 CR = 0.3
+
+ITERACIONES = 100
 
 SEMILLA = 42
 
@@ -47,111 +45,46 @@ def main():
     )
 
     # -------------------------
-    # Prueba de evaluación
-    # -------------------------
-
-    individuo_prueba = [
-        50,
-        100,
-        150,
-        200,
-        230
-    ]
-
-    fitness = evaluar_individuo(
-        individuo_prueba,
-        probabilidades,
-        niveles_gris
-    )
-
-    print("Individuo de prueba:")
-    print(individuo_prueba)
-
-    print("\nFitness:")
-    print(fitness)
-
-    # -------------------------
     # Evolución Diferencial
     # -------------------------
 
-    rng = np.random.default_rng(
-        SEMILLA
-    )
-
-    poblacion = inicializar_poblacion(
+    (
+        poblacion,
+        mejores_umbrales,
+        mejor_fitness,
+        historial
+    ) = evolucion_diferencial(
+        probabilidades=probabilidades,
+        niveles_gris=niveles_gris,
         num_soluciones=NUM_SOLUCIONES,
         num_umbrales=NUM_UMBRALES,
+        factor_f=F,
+        cr=CR,
+        iteraciones=ITERACIONES,
         semilla=SEMILLA
     )
 
-    # Evaluar población inicial
+    print("\nMejores umbrales encontrados:")
+    print(mejores_umbrales)
 
-    fitness_actual = evaluar_poblacion(
-        poblacion,
-        probabilidades,
-        niveles_gris
+    print("\nMejor fitness:")
+    print(mejor_fitness)
+
+    # -------------------------
+    # Segmentación
+    # -------------------------
+
+    imagen_segmentada = segmentar_imagen(
+        imagen_grises,
+        mejores_umbrales
     )
 
-    print("\nMejor fitness inicial:")
-    print(np.min(fitness_actual))
-
-    # -------------------------
-    # Mutación
-    # -------------------------
-
-    mutaciones = mutacion(
-        poblacion,
-        factor_f=F,
-        rng=rng
+    cv2.imwrite(
+        "results/imagen_segmentada.jpg",
+        imagen_segmentada
     )
 
-    # -------------------------
-    # Cruza
-    # -------------------------
-
-    nueva_poblacion = cruza_binomial(
-        poblacion,
-        mutaciones,
-        cr=CR,
-        rng=rng
-    )
-
-    # -------------------------
-    # Evaluar nuevos individuos
-    # -------------------------
-
-    fitness_nuevo = evaluar_poblacion(
-        nueva_poblacion,
-        probabilidades,
-        niveles_gris
-    )
-    
-    # -------------------------
-    # Selección
-    # -------------------------
-    fitness_anterior = fitness_actual.copy()
-
-    poblacion, fitness_actual = seleccion(
-        poblacion,
-        nueva_poblacion,
-        fitness_actual,
-        fitness_nuevo
-    )
-
-    print(
-        "\nIndividuos reemplazados:"
-    )
-
-    print(
-        np.sum(
-            fitness_nuevo < fitness_anterior
-        )
-    )
-
-
-    print("Mejor fitness después de una generación:")
-    print(np.min(fitness_actual))
-
+    print("\nImagen segmentada guardada correctamente.")
 
 
 if __name__ == "__main__":

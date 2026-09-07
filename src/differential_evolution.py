@@ -1,5 +1,5 @@
 import numpy as np
-
+from src.segmentation import evaluar_poblacion
 
 def inicializar_poblacion(
     num_soluciones,
@@ -170,3 +170,98 @@ def seleccion(
     )
 
     return poblacion_siguiente, fitness_siguiente
+
+def evolucion_diferencial(
+    probabilidades,
+    niveles_gris,
+    num_soluciones=50,
+    num_umbrales=5,
+    factor_f=0.9,
+    cr=0.3,
+    iteraciones=100,
+    limite_inferior=1,
+    limite_superior=255,
+    semilla=None
+):
+    """
+    Ejecuta el algoritmo de Evolución Diferencial
+    para encontrar umbrales de segmentación.
+
+    Retorna:
+        poblacion: población final.
+        mejor_individuo: mejores umbrales encontrados.
+        mejor_fitness: fitness de la mejor solución.
+        historial: mejor fitness de cada iteración.
+    """
+
+    rng = np.random.default_rng(semilla)
+
+    poblacion = inicializar_poblacion(
+        num_soluciones=num_soluciones,
+        num_umbrales=num_umbrales,
+        limite_inferior=limite_inferior,
+        limite_superior=limite_superior,
+        semilla=semilla
+    )
+
+    fitness_actual = evaluar_poblacion(
+        poblacion,
+        probabilidades,
+        niveles_gris
+    )
+
+    historial = []
+
+    for iteracion in range(iteraciones):
+
+        mutaciones = mutacion(
+            poblacion,
+            factor_f=factor_f,
+            limite_inferior=limite_inferior,
+            limite_superior=limite_superior,
+            rng=rng
+        )
+
+        nueva_poblacion = cruza_binomial(
+            poblacion,
+            mutaciones,
+            cr=cr,
+            rng=rng
+        )
+
+        fitness_nuevo = evaluar_poblacion(
+            nueva_poblacion,
+            probabilidades,
+            niveles_gris
+        )
+
+        poblacion, fitness_actual = seleccion(
+            poblacion,
+            nueva_poblacion,
+            fitness_actual,
+            fitness_nuevo
+        )
+
+        mejor_fitness = np.min(fitness_actual)
+
+        historial.append(mejor_fitness)
+
+        print(
+            f"Iteración {iteracion + 1}: "
+            f"{mejor_fitness}"
+        )
+
+    indice_mejor = np.argmin(fitness_actual)
+
+    mejor_individuo = np.sort(
+        poblacion[indice_mejor]
+    )
+
+    mejor_fitness = fitness_actual[indice_mejor]
+
+    return (
+        poblacion,
+        mejor_individuo,
+        mejor_fitness,
+        historial
+    )
