@@ -132,4 +132,41 @@ def cruza_binomial(
             poblacion[i]
         )
 
+    nueva_poblacion = np.round(
+        nueva_poblacion
+    ).astype(int)
+    
     return nueva_poblacion
+
+def seleccion(
+    poblacion,
+    nueva_poblacion,
+    fitness_actual,
+    fitness_nuevo
+):
+    """
+    Selecciona entre el individuo actual y
+    el nuevo individuo.
+
+    Como el fitness se define como:
+
+        1 / varianza_interclase
+
+    un menor fitness representa una mejor solución.
+    """
+
+    mascara = fitness_nuevo < fitness_actual
+
+    poblacion_siguiente = np.where(
+        mascara[:, np.newaxis],
+        nueva_poblacion,
+        poblacion
+    )
+
+    fitness_siguiente = np.where(
+        mascara,
+        fitness_nuevo,
+        fitness_actual
+    )
+
+    return poblacion_siguiente, fitness_siguiente

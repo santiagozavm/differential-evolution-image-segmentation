@@ -4,13 +4,15 @@ import numpy as np
 from src.segmentation import (
     cargar_imagen,
     calcular_histograma,
-    evaluar_individuo
+    evaluar_individuo,
+    evaluar_poblacion
 )
 
 from src.differential_evolution import (
     inicializar_poblacion,
     mutacion,
-    cruza_binomial
+    cruza_binomial,
+    seleccion
 )
 
 
@@ -82,8 +84,20 @@ def main():
         semilla=SEMILLA
     )
 
-    print("\nPoblación inicial:")
-    print(poblacion[:5])
+    # Evaluar población inicial
+
+    fitness_actual = evaluar_poblacion(
+        poblacion,
+        probabilidades,
+        niveles_gris
+    )
+
+    print("\nMejor fitness inicial:")
+    print(np.min(fitness_actual))
+
+    # -------------------------
+    # Mutación
+    # -------------------------
 
     mutaciones = mutacion(
         poblacion,
@@ -91,8 +105,9 @@ def main():
         rng=rng
     )
 
-    print("\nPrimeros 5 vectores mutantes:")
-    print(mutaciones[:5])
+    # -------------------------
+    # Cruza
+    # -------------------------
 
     nueva_poblacion = cruza_binomial(
         poblacion,
@@ -101,8 +116,42 @@ def main():
         rng=rng
     )
 
-    print("\nPrimeros 5 individuos después de la cruza:")
-    print(nueva_poblacion[:5])
+    # -------------------------
+    # Evaluar nuevos individuos
+    # -------------------------
+
+    fitness_nuevo = evaluar_poblacion(
+        nueva_poblacion,
+        probabilidades,
+        niveles_gris
+    )
+    
+    # -------------------------
+    # Selección
+    # -------------------------
+    fitness_anterior = fitness_actual.copy()
+
+    poblacion, fitness_actual = seleccion(
+        poblacion,
+        nueva_poblacion,
+        fitness_actual,
+        fitness_nuevo
+    )
+
+    print(
+        "\nIndividuos reemplazados:"
+    )
+
+    print(
+        np.sum(
+            fitness_nuevo < fitness_anterior
+        )
+    )
+
+
+    print("Mejor fitness después de una generación:")
+    print(np.min(fitness_actual))
+
 
 
 if __name__ == "__main__":
